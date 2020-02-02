@@ -1,0 +1,53 @@
+---
+title: "607W1"
+author: "Christopher Bloome"
+date: "2/1/2020"
+output: html_document
+---
+
+# Introduction: 
+
+In 2018, the American Women’s National Soccer Team entered the World Cup as one of two favorites - both host nation France and the USA were seen as likely eventual champions. The team at FiveThirtyEight tracked the probability that each team of the 24 Women’s World Cup teams would advance to each round of the tournament. They achieved this from just a handful of key metrics: Soccer Power Index, which effectively measures the probability that a team would beat a statistically average team in a neutral setting and Global Offense and Defense, which projects the quantity of goals a team would score or concede in a game against a neutral opponent. 
+
+With these they were able to project the probability that a team would win each of their group stage games and their performance in the "knockout" rounds. For those unfamiliar, the world cup begins with each team in one of 8 groups, each with 4 teams in total. Every team plays every other team in their group, and the teams with the two best records advance to “the round of 16.” From here it is single elimination through the final. 
+
+As the tournament progressed, the team at FiveThirtyEight incorporated the updated standings into their model and updated their probabilities accordingly. Not only were the probabilities associated with various outcomes updated each time the model was refreshed, they also updated the underlying metrics to reflect new information about the team's skill and strength. In order to provide a succinct and cohesive table, I felt it was appropriate to limit my analysis to the Women’s World Cup from two teams: The United States and France. I also limited my scope to the Soccer Power Index, Global Offense/Defense and the probability that each of our two teams were to win the final. In the final table you can see how the probabilities shifted for each team as the tournament progressed. 
+
+The initial study from FiveThirtyEight can be found here: https://projects.fivethirtyeight.com/2019-womens-world-cup-predictions/
+
+## Load Packages:
+
+```{r message = FALSE}
+library(RCurl)
+library(dplyr)
+library(plyr)
+library(knitr)
+```
+## Load Data:
+```{R}
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/wwc_forecasts.csv")
+y <- read.csv(text = x)
+```
+
+## Select/Rename Columns, Select Rows:
+``` {R}
+Final_T <- select(y, 1, 2, 4, 5, 6, 21)
+Final_T <- filter(Final_T, team == "USA"|team == "France")
+Final_T <- rename(Final_T, c("X.U.FEFF.forecast_timestamp" = "Prediction Date","spi" = "Power Index","global_o" = "Offensive Strength", "global_d" = "Defensive Strength", "win_league" = "League Champion Prob","team" = "Team"))
+```
+## Format Data in Prediction Date Column:
+````{r}
+Final_T$"Prediction Date" <- strtrim(Final_T$"Prediction Date", 10)
+
+
+````
+## Publish Table:
+
+```{r results ='axis'}
+kable(Final_T)
+```
+
+## Conclusion: 
+As you can see, before the tournament began, France was the favorite. While their Power Index was below that of the USA, and their offensive and defensive ratings were not as favorable, the model expressed that they had a slightly higher probability of winning the tournament. This is likely attributed to the fact that all of the World Cup games were played in France, giving them a consistent home-field advantage. France did not preform particularly well in the group stage, and as a result, the model adapted to reflect the apparent meager-advantage being the host nation provided. This is reflected in the fact that the relative rating of the two teams was consistent during the first 2 weeks of the analysis, but the win probability shifted in the USA's favor. 
+
+Unfortunately, France was eliminated sometime before the June 29th update, moving their probability of winning the tournament to Zero. USA's probability of winning the tournament started at a modest 17% and worked its way to 66% before eventually winning. 
