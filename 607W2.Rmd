@@ -1,0 +1,94 @@
+---
+title: "607W2"
+author: "Christopher Bloome"
+date: "2/9/2020"
+output: html_document
+---
+# Introduction:
+In this study, I was tasked with interviewing 5 individuals, and having them rate 6 recent movies on a scale of 1-5. I then uploaded these responses into a MySQL Database, and imported them into R. 
+
+## Movie Selection:
+I wanted to pick movies which individuals had a high probability of viewing, but also movies which lend themselves to strong opinions. I ended up with a selection of movies that either preformed well in the box office, or were nominated for major awards. 
+
+* Joker
+* 1917
+* The Irishmen
+* Star Wars: The Rise of Skywalker 
+* Knives Out
+* Terminator: Dark Fate
+
+## Rating Criteria:
+Thinking through the standardization of ratings, I wanted our pool of reviewers to be relatively calibrated, yet did not want to be prescriptive in the set of criteria they were to consider. I asked each reviewer to consider the quality of each new release they had seen in the last 3 year years, and to consider a scale where the best film seen in this time period would earn a 5, and the worst would earn a 1. In this way - more dedicated movie goers with more refined tastes and passionate opinions would likely have a similar scale to one who is less involved as their frame of reference would be relatively consistent. 
+
+## Process: 
+Surveys were conducted in relatively casual settings, with the interviewer writing responses down with pen and paper. The results were added to a MySQL database by way of the MySQL Workbench GUI (the generated corresponding code can be found below). From here a CSV File was generated, uploaded to Git Hub then imported to R. 
+
+## SQL code:
+CREATE SCHEMA `movie_rating_db`;
+
+CREATE TABLE `movie_rating_db`.`survey_results` (
+  `Survey Number` INT NOT NULL,
+  `Name` VARCHAR(45) NOT NULL,
+  `Joker` INT NULL,
+  `1917` INT NULL,
+  `The Irishmen` INT NULL,
+  `Star Wars` INT NULL,
+  `Knives Out` INT NULL,
+  `Terminator` INT NULL,
+  PRIMARY KEY (`Survey Number`),
+  UNIQUE INDEX `Name_UNIQUE` (`Survey Number` ASC) VISIBLE);
+  
+INSERT INTO `movie_rating_db`.`survey_results` (`Survey Number`, `Name`, `Joker`, `1917`, `The Irishmen`) VALUES ('1', 'Alex', '5', '5', '1');
+
+INSERT INTO `movie_rating_db`.`survey_results` (`Survey Number`, `Name`, `Joker`, `1917`, `The Irishmen`, `Star Wars`, `Knives Out`, `Terminator`) VALUES ('2', 'Ben', '1', '5', '3', '4', '5', '4');
+
+INSERT INTO `movie_rating_db`.`survey_results` (`Survey Number`, `Name`, `Joker`, `1917`, `The Irishmen`, `Star Wars`, `Knives Out`, `Terminator`) VALUES ('3', 'Chris', '3', '5', '1', '4', '4', '3');
+
+INSERT INTO `movie_rating_db`.`survey_results` (`Survey Number`, `Name`, `1917`, `The Irishmen`, `Star Wars`) VALUES ('4', 'Anna', '2', '3', '2');
+
+INSERT INTO `movie_rating_db`.`survey_results` (`Survey Number`, `Name`, `Joker`, `1917`, `The Irishmen`, `Star Wars`) VALUES ('5', 'Jordan', '5', '5', '5', '3');
+
+## Load Table:
+```{R, message = FALSE}
+library(RCurl)
+library(knitr)
+library(dplyr)
+library(kableExtra)
+```
+``` {R}
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/Movie_Ratings_T.csv")
+y <- read.csv(text = x, check.names=FALSE)
+Movie_T <- select(y,2,3,4,5,6,7)
+Movie_T <- kable(Movie_T, align=rep('c', 5))
+column_spec(Movie_T, 1:6,width = "3cm")
+```
+## Address Nulls:
+The data export from the SQL Database contains blank values listed as "Null." In order to analyse this table, we need to remove these. 
+
+```{r}
+y[y == "NULL"] = NA
+Movie_T <- select(y,2,3,4,5,6,7)
+Movie_T <- kable(Movie_T, align=rep('c', 5))
+column_spec(Movie_T, 1:6,width = "3cm")
+
+
+
+```
+## Average Movie Results:
+I wanted to calculate the average rating for each film, and then build a second table to host information. In doing so, I built a function to calculate the mean rating of each film.
+
+``` {R}
+myFx <- function(x) {result <- mean(as.numeric(as.character(na.omit(x)))) 
+return(result)}
+
+Avg_table <- matrix(c(myFx(y[,3]),myFx(y[,4]),myFx(y[,5]),myFx(y[,6]),myFx(y[,7])),ncol=5,byrow=TRUE)
+colnames(Avg_table) <- c("Joker","1917","The Irishmen", "Star Wars","Knives Out")
+rownames(Avg_table) <- c("Average")
+
+Avg_table <- kable(Avg_table, align=rep('c', 5))
+column_spec(Avg_table, 1:6,width = "3cm")
+```
+
+## Next Steps: 
+While this presentation is certainly adequate for this purpose, ideally I would be able to generate a table representing the averages without needing to "hard code" each movie name and the formula into each cell. As I continue to improve my command of the R langue, this is something I will be exploring. 
+
