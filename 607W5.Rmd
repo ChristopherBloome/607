@@ -1,0 +1,71 @@
+>---
+title: "607W5"
+author: "Christopher Bloome"
+date: "3/1/2020"
+output: html_document
+---
+
+## Introduction 
+
+*The chart above describes arrival delays for two airlines across five destinations. Your task is to:*
+*(1) Create a .CSV file that includes all of the information above.*
+*You’re encouraged to use a “wide” structure similar to how the information appears above, so that you can practice tidying and transformations as described below.*
+*(2) Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data.*
+*(3) Perform analysis to compare the arrival delays for the two airlines.*
+
+## Load Libraries and Data 
+
+After replicating the file as a CSV and uploading to Github, our first step is to load into R and assess the data's structure. 
+
+```{r}
+library(RCurl)
+library(tidyr)
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/607W5.csv")
+RawTable <- read.csv(text = x)
+RawTable
+```
+
+## Strategy 
+As we can see, this data violated several of our TidyData rules. Most notably, Columns 3 through 7 contain variable names and Column 2 contains multiple variables (On Time and Delayed).
+
+We first need to add titles to Columns 1 and 2, and insert missing values into select cells in Column 1. From here, we can restructure our data using pivot_longer and pivot_wider as needed. 
+
+
+```{r}
+colnames(RawTable)[1] <- "Airline"
+colnames(RawTable)[2] <- "Status"
+RawTable[2,1] <- "Alaska"
+RawTable[4,1] <- "AM West"
+
+RawTable2 <- RawTable %>%   
+pivot_longer(c(Los.Angeles, Phoenix, San.Diego, San.Fransisco, Seattle), names_to = "City", values_to = "Flight Count")
+
+RawTable2
+
+TidyTable <- RawTable2 %>%
+  pivot_wider(names_from = Status, values_from = `Flight Count`)
+
+TidyTable
+
+```
+
+## Analysis 
+
+As this table measures delayed and on-time flights across cities and airlines, we can infer that there are two different uses one might have for this table: "which airline runs on time most frequently on average across all cities?" and "which airline is more likely to arrive to a given city on time?" 
+
+We can add in a new column to answer the second question, and provide averages that answer the first question: 
+
+```{r}
+TidyTable$"Delayed Rate" <- (TidyTable$Delayed / (TidyTable$Delayed + TidyTable$`On Time`))
+
+TidyTable
+
+
+sum(subset(TidyTable$Delayed, TidyTable$Airline == 'Alaska')) / sum(subset(c(TidyTable$Delayed, TidyTable$`On Time`), TidyTable$Airline == 'Alaska'))
+
+sum(subset(TidyTable$Delayed, TidyTable$Airline == 'AM West')) / sum(subset(c(TidyTable$Delayed, TidyTable$`On Time`), TidyTable$Airline == 'AM West'))
+```
+
+## Conclusions
+
+AM West is only delayed on average, 11% of the time, while Alaska is delayed 13% on average. That being said, if one was traveling to Phoenix, they would likely want to fly Alaska as they are only delayed 5% of the time for that city specifically, and AM West has a delayed rate of nearly 8%. 
