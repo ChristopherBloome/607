@@ -1,0 +1,199 @@
+---
+title: "607 - Project 2"
+author: "Christopher Bloome"
+date: "3/6/2020"
+output: html_document
+---
+## Overview
+In this project, we were tasked with choosing 3 data sets among a set aggregated by our peers in the preceding week, and running an analysis proposed in our weekly discussion. I found that some of these asks were not specific, so we took liberties when outlining our objectives. The module was focused on using the tidry and dplyr packages, as well as the principles of Tiny Data.
+
+## Analysis 1 
+```{r, message = FALSE}
+library(RCurl)
+library(tidyr)
+library(dplyr)
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/pbp-2019.csv")
+RawTable <- read.csv(text = x)
+```
+
+#### Objective
+For my first study, I wanted to dig into a large dataset outlining the outcomes of over 40,000 NFL plays over the course of the 2019 season. This dataset is very wide, 41 columns, and has information about a number of events that could occur on a play. 
+
+I wanted to test a hypothesis I have about the game. At the risk of over-simplifying, at the conclusion of a play in the NFL, the game clock will continue to run provided the attempted play was "complete" and the ball remained in bounds. If there is an incomplete pass, a turnover, or the player steps out of bounds, the game clock will stop. 
+
+As a result, when the team who is leading a game has possession late in the game, it is common to run the ball frequently in order to use more time during your possession, giving their opponents less of an opportunity to come back. Similarly, in cases where the outcome of the game is all-but decided (in cases where the winning team has a substantial lead), it is relatively common for both teams to the run the ball for the sake of sportsmanship and player safety. 
+
+There is a third option that is relevant in a study like this - the offensive team could purposely kneel. This is a low risk "play" where to offense does not attempt to advance the ball, but is also guaranteed to keep the clock running - common at the end of the game. I elected to limit my analysis to run vs pass plays, as I felt it could serve as an indicator of playing style, and could be used for more applications when studying the sport. 
+
+It is my perception that few games are competitive for the duration of the game, and thus, the rate of running plays compared to passing plays is relatively higher in the 4th quarter of play than in other periods. I wanted to see if this data reflected this. 
+
+#### Process
+
+``` {r}
+NFLTable <- data.frame(RawTable$OffenseTeam, RawTable$IsRush, RawTable$IsPass, RawTable$Quarter)
+colnames(NFLTable) <- c("Team", "Rush", "Pass", "Quarter")
+nfl2<- NFLTable %>% 
+  group_by(Team,Quarter) %>% 
+  summarise(RushTotal = sum(Rush), PassTotal = sum(Pass))
+
+```
+After importing the data, we "grouped by" Team and Quarter, and calculated the total amount of rushing plays and passing plays per team. 
+
+```{r}
+NFLTableF <- nfl2[!(nfl2$Team == "" | nfl2$Quarter == 5),]
+```
+We then removed overtime from our study, and removed a few lines where the offensive team was a null value. Finally, we then added in a new column that calculated the percent of plays that were rushing plays out of all offensive plays (excluding special teams and kneeling situations).
+
+```{r}
+NFLTableF$RushPercent <- NFLTableF$RushTotal/(NFLTableF$RushTotal+NFLTableF$PassTotal)
+NFLTableF
+
+NFLSummary <- NFLTableF %>% 
+  group_by(Quarter) %>% 
+  summarise(AverageRushPercent = mean(RushPercent))
+
+NFLSummary
+```
+
+#### Findings 
+
+I debated the best way to calculate our summary. We could either calculate the total rushing plays vs passing plays across the league. This would scale our findings, and give more weight to teams which attempt more offensive plays. As each team plays the same amount of games, the end result is that our findings would more heavily weight successful teams (as they tend to have a higher percentage of offensive plays compared to their opponents). Alternatively, we could give each team equal weight, and calculate the average of the average for each quarter. As this analysis is at its heart, about playing style and if on average teams change their playing style throughout the game (and not about the probability a play will be a run or pass), I elected to use the later method. 
+
+The results were surprising, on average, rushing is actually less common in the 4th quarter than the average for the game. 
+
+## Analysis 2 
+
+```{r}
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/mbta.csv")
+RawTable <- read.csv(text = x)
+
+```
+#### Objective
+For my next analysis, I took a look at ridership data in Boston across several modes of transportation over several years. I have never been to Boston, however, I live in New York City, and live relatively close to one of our newer ferry terminals. I enjoy taking the ferry on a nice day, however, it never crosses my mind to take a boat during the winter. With that in mind, I wanted to see how seasonal boat travel in Boston is, normalized for the seasonality of mass transit across all modes of travel. 
+
+#### Process 
+I elected to pivot the table to its longest form, before then shortening the string in the month column such that it was identical regardless of year. From here, I was able to group by month and mode of transportation, and pivot back to a slightly wider format for analysis.  
+
+```{r}
+RawTable2 <- RawTable %>%  
+pivot_longer(c("X2007.01":"X2011.10"), names_to = "Month", values_to = "Rider Count")
+
+RawTable2$Month <- substring(RawTable2$Month,7,8)
+
+TranspoTable <- RawTable2 %>% 
+  group_by(Month,mode) %>% 
+  summarise(`Rider Count` = sum(`Rider Count`))
+
+TidyTranspo <- TranspoTable %>%
+  pivot_wider(names_from = mode, values_from = `Rider Count`)
+
+TidyTranspo <- TidyTranspo[ -c(2,8)]
+
+TidyTranspo$Boat <- TidyTranspo$Boat/TidyTranspo$TOTAL
+TidyTranspo$Bus <- TidyTranspo$Bus/TidyTranspo$TOTAL
+TidyTranspo$`Commuter Rail` <- TidyTranspo$`Commuter Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Heavy Rail` <- TidyTranspo$`Heavy Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Light Rail` <- TidyTranspo$`Light Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Private Bus` <- TidyTranspo$`Private Bus`/TidyTranspo$TOTAL
+TidyTranspo$RIDE <- TidyTranspo$RIDE/TidyTranspo$TOTAL
+TidyTranspo$`Trackless Trolley` <- TidyTranspo$`Trackless Trolley`/TidyTranspo$TOTAL
+TidyTranspo <- TidyTranspo[ -9]
+TidyTranspo
+```
+
+#### Findings (part 1)
+As expected, we do see the most seasonal variation in the boat travel mode, however, there is a bit of an outlier. In March, we see Boat travel increase by 4x over February before dropping again in April. Looking into the source data, we see a value of 40,000 for Boat travel instances in March 2007. This is roughly 10x the values of Feb 2007, April 2007, March 2008-2010. For this reason, I think we can assume that this value was meant to be 4000 and there was an error in data entry. 
+
+I will change said value (and that of the March 2007 total) and re-run our analysis: 
+
+```{r}
+RawTable[2,5] = 4
+RawTable[11,5] = 1168
+
+RawTable2 <- RawTable %>%  
+pivot_longer(c("X2007.01":"X2011.10"), names_to = "Month", values_to = "Rider Count")
+
+RawTable2$Month <- substring(RawTable2$Month,7,8)
+
+TranspoTable <- RawTable2 %>% 
+  group_by(Month,mode) %>% 
+  summarise(`Rider Count` = sum(`Rider Count`))
+
+TidyTranspo <- TranspoTable %>%
+  pivot_wider(names_from = mode, values_from = `Rider Count`)
+
+TidyTranspo <- TidyTranspo[ -c(2,8)]
+
+TidyTranspo$Boat <- TidyTranspo$Boat/TidyTranspo$TOTAL
+TidyTranspo$Bus <- TidyTranspo$Bus/TidyTranspo$TOTAL
+TidyTranspo$`Commuter Rail` <- TidyTranspo$`Commuter Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Heavy Rail` <- TidyTranspo$`Heavy Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Light Rail` <- TidyTranspo$`Light Rail`/TidyTranspo$TOTAL
+TidyTranspo$`Private Bus` <- TidyTranspo$`Private Bus`/TidyTranspo$TOTAL
+TidyTranspo$RIDE <- TidyTranspo$RIDE/TidyTranspo$TOTAL
+TidyTranspo$`Trackless Trolley` <- TidyTranspo$`Trackless Trolley`/TidyTranspo$TOTAL
+TidyTranspo <- TidyTranspo[ -9]
+TidyTranspo
+```
+
+#### Findings (part 2)
+With this data corrected, our seasonality in Boat travel is a lot more predictable. Additionally, we see that there is virtually no seasonality to any mode of transportation other than boat travel. To quantify this, we can take the coefficient of variation (the Standard Deviation scaled to the Mean) across all months for each mode. 
+
+As this function is not offered in any of our loaded libraries, I will write it myself. Also of note, as our table is still grouped, we need to un-group our table for this analysis to work correctly.  
+
+``` {r warning = FALSE} 
+TidyTranspo <- ungroup(TidyTranspo)
+TidyTranspo <- TidyTranspo[,-1]
+myFx <- function(x) {result <- sd(x)/mean(x) }
+TidyTranspo  %>%
+  summarise_each(funs(myFx))
+
+```      
+
+## Analysis 3 
+```{r}
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/2010__AP__College_Board__School_Level_Results.csv")
+RawTable <- read.csv(text = x)
+```
+For my third analysis, I wanted to explore a project which involved joining two tables. The analysis of test scores suggested by Kevin Potter in our discussion last week seemed appropriate: *"Compare the schools to see which one had the highest performing ratio of exams with a 3, 4, or 5 and cross-reference with the location of the school."* The initial dataset does not have school location, however, I found another table from the same source which had school locations, and both fields had a unique identifier, DBN. 
+
+#### Objective
+
+As this data set is from the New York department of Education, I thought it would be interesting to look at test success rate by borough. Specifically - what borough has the highest AP test pass rate? 
+
+```{r}
+x <- getURL("https://raw.githubusercontent.com/ChristopherBloome/607/master/2018_DOE_High_School_Directory%20(1).csv")
+SchoolTable <- read.csv(text = x)
+```
+#### Process 
+Looking through the two tables, the first thing that stands out is that DBN and school name are the only shared field between the two. It is worth noting that the naming conventions in these fields differ slightly, and of these two, it is more likely that school name has slight variations from table to table. For these reasons, I decided it would be easiest to change the naming convention of DBN (from dbn in the school location table), and do a natural left join.  
+```{r}
+SchoolTable <- SchoolTable %>%
+  rename(
+    DBN = dbn 
+  )
+JoinedTable <- left_join(RawTable, SchoolTable)
+```
+With all of our information in one table, we can proceed with our analysis:
+``` {r}
+ApTest <- data.frame(JoinedTable$SchoolName,JoinedTable$AP.Test.Takers,JoinedTable$Total.Exams.Taken,JoinedTable$Number.of.Exams.with.scores.3.4.or.5,JoinedTable$boro)
+ApTest <- ApTest[ !is.na(ApTest$JoinedTable.AP.Test.Takers),]
+ApTest <- ApTest[ !is.na(ApTest$JoinedTable.boro),]
+ApTest$AverageSuccess <- ApTest$JoinedTable.Number.of.Exams.with.scores.3.4.or.5/ApTest$JoinedTable.Total.Exams.Taken
+colnames(ApTest) <- c("School Name", "Test Takers", "Attempts" , "Success Count", "Borough" , "SuccessRate")
+head(ApTest, 10)
+```
+After removing schools who did not have borough information, and those who did not have any test takers, we calculated the average success rate per school. Thinking through our uses of this information, I am choosing to leave this table in this state and to build a second table with a borough analysis. 
+
+Of note - I will not be using the success rate per school metric in my borough table, as it will skew results to more heavily weigh schools with fewer test takers. Rethinking our question of "what borough has the highest test success rate?" - it is clear that this does not on its own tell us which borough is "better" at prepping students for tests. A borough which only allows students who will likely pass an exam to take a test will naturally have more favorable results. To round out our analysis, I will also provide the total test count and pass numbers for each borough.
+``` {r}
+
+ApTestbyB <- ApTest %>% 
+  group_by(Borough) %>% 
+  summarise(`Success Count` = sum(`Success Count`, na.rm = TRUE), `Attempts` = sum(`Attempts`, na.rm=TRUE))
+ApTestbyB$SuccessRate <- ApTestbyB$`Success Count`/ApTestbyB$Attempts
+ApTestbyB
+```
+#### Findings 
+
+As we can see above, Manhattan has the highest passing percentage. While it is also true they have the highest passing count, it seems as though they also test fewer students when compared to Queens, Brooklyn (K for Kings County) and Staten Island (R for Richmond County). The Bronx (X) tests far fewer students than the other boroughs, but passes more than half. Seeing as the students that Manhattan, and to a lesser extent the Bronx, choose to test are significantly more likely to pass, we can make inferences about selection and student pathing in these schools. A child who is on the cusp of being "AP ready" might have significantly different experiences depending on which borough they attend high school. 
