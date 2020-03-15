@@ -1,1 +1,8 @@
-﻿Valid XML
+<Book3>
+    <Title>Soccernomics</Title>
+    <Author>Simon Kuper</Author>
+    <Author>Stefan Szymanski</Author>
+    <Sport>Soccer</Sport>
+    <Length>464</Length>
+    <Year>2009</Year>
+</Book3>
