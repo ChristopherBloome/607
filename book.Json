@@ -13,7 +13,8 @@
 },
 { 
     "Title" : "Soccernomics",
-    "Author" : ["Simon Kuper","Stefan Szymanski"],
+    "Author" : "Simon Kuper",
+    "Author2" : "Stefan Szymanski",
     "Sport" : "Soccer",
     "Length": 464
 }
