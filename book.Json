@@ -1,9 +1,9 @@
-1 {"Books" :[ 
+{"Books" :[ 
 { 
     "Title" : "Once a Runner", 
     "Author" : "John Parker", 
     "Sport" : "Running", 
-    "Length": 304, 
+    "Length": 304
 }, 
 { 
     "Title" : "The Rider",
