@@ -1,0 +1,179 @@
+---
+title: "Assignment 10"
+author: "Christopher Bloome"
+date: "4/5/2020"
+output: html_document
+---
+
+
+## Introduction 
+
+In this assignment we were asked to walk through an example sentiment analysis from Text Mining with R, A Tidy Approach by Julia Silge and David Robinson, 2020-03-07 (https://www.tidytextmining.com/index.html). Then, we were instructed to run a similar analysis on a different corpus, and to incorporate at least one additional sentiment lexicon. 
+
+## Example Code 
+```{r warning=FALSE, message=FALSE}
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+library(tidytext)
+```
+```{r}
+
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(linenumber = row_number(),
+         chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]", 
+                                                 ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+head(tidy_books)
+```
+The author begins with a text file conjured by a function called austen_books(), from the package janeaustenr, a repository of Jane Austen's work. They then grouped by book, extracted line and chapter number and then broke each line into individual tokens, in this case words. 
+
+```{r}
+library(textdata)
+nrc_joy <- get_sentiments("nrc") %>% 
+  filter(sentiment == "joy")
+
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+
+
+```
+
+Using the words associated with joy from the nrc data set (This data set was published in Saif M. Mohammad and Peter Turney. (2013), ``Crowdsourcing a Word-Emotion Association Lexicon.'' Computational Intelligence, 29(3): 436-465. ) they then were able to view which words associated with joy were most commonly used in Austen's novel Emma. 
+
+```{r}
+library(tidyr)
+
+jane_austen_sentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+library(ggplot2)
+
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+For the next analysis, the author wanted to find the change in sentiment using the 'bing' sentiment db, across a number of Austen's novels. To accomplish this, they broke each of her novels into 80 line segments, and measure the aggregate sentiment in each segment. Plotting the sentiment on the Y Axis, and the segment on the X, they were able to measure the change in sentiment over time. 
+
+## Student Analysis - bing
+
+To contrast the above example, I wanted to select a more modern corpus. I am fan of the NBC show, "The Office" (having been on winning teams in more than one "The Office" trivia night), and thought that this would be an interesting subject to explore. I was delighted to find that there was an existing R package with the scripts for the entire series. 
+
+```{r}
+library(schrute)
+```
+```{R}
+The_Office <- schrute::theoffice
+The_Office <- tibble(The_Office$season, The_Office$episode, The_Office$text)
+The_Office <- The_Office %>%
+  unnest_tokens(word, The_Office$text)
+The_Office <- The_Office %>% rename("Season" = `The_Office$season`,"Episode" = `The_Office$episode`)
+```
+In the Jane Austen analysis, they broke each of her novels into 80 line sections. For a television series, I thought it would be more appropriate to explore the relative sentiment of each episode, and track the change in estimate through each season. 
+```{r}
+The_Office_Table <- The_Office %>% 
+    inner_join(get_sentiments("bing")) %>%
+    count(Season, Episode, sentiment) %>%
+    spread(sentiment, n, fill = 0) %>%
+    mutate(sentiment = positive - negative)
+head(The_Office_Table)
+```
+```{r}
+ggplot(The_Office_Table, aes(Episode, sentiment, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Season, ncol = 3, scales = "free_x")
+
+```
+
+As you can see above, there are a few interesting findings that stand out right away. The first is that our underlying data set seems to incomplete. After spot-checking a few values, the episodes featuring a zero sentiment are actually null values in the The_Office_Table tibble. The next observation is that there are no episodes that feature a negative sentiment. While The Office is known for its awkward moments, at the  end of the day it is meant to be situational comedy, so this is to be expected. I would have anticipated that the first season of the series would have been considerably lower in sentiment do to its more awkward nature (the first season was more heavily based on the BBC series of the same name, and thus, known to be less uplifting than later seasons). Finally, it is notable how many season finales have a very high sentiment rating. 
+
+## Student Analysis - nrc 
+
+One of things that fans of the show appreciate is how it leverages awkward moments to build tension before releasing in either comedy or happiness. For my next analysis, I wanted to track the use of the Joy and Disgust sentiment as defined by the nrc data set: 
+```{R}
+nrc_disgust <- get_sentiments("nrc") %>% 
+  filter(sentiment == "disgust")
+
+The_Office_disgust <- The_Office %>% 
+    inner_join(nrc_disgust) %>%
+    count(Season, Episode, sentiment) %>%
+    spread(sentiment, n, fill = 0)
+head(The_Office_disgust)
+```
+In our last analysis, using the bing data set, we had a natural mechanism for normalizing our data set for size. By subtracting negative emotions from positive emotions, we looked at net emotion. In this analysis, however, we are merely counting words that conjure disgust. As a result, a better analysis is to look at the percentage of words that conjure disgust, as episodes with more dialog would mask any findings about the tone of the episode. 
+
+I elected to go back to our original The_Office data set, count the number of words and the divide the words which conjure disgust by the total dialog in the episode. 
+```{r}
+The_Office_N <- The_Office %>% count(Season,Episode)
+
+The_Office_disgust <- inner_join(The_Office_disgust, The_Office_N)
+The_Office_disgust$disgustpercent <- The_Office_disgust$disgust/The_Office_disgust$n
+The_Office_disgust
+```
+
+```{r}
+
+ggplot(The_Office_disgust, aes(Episode, disgustpercent, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Season, ncol = 3, scales = "free_x")
+```
+
+What stands out above, is how the show tends to have several episodes that lean more heavily on this tactic of crafting anxiety or other negative emotions, before inevitably releasing this tension. The season premier of season 5 seems to stand out as an outlier, however, there are many other episodes that tower above the rest in this metric. 
+
+```{r}
+The_Office_joy <- The_Office %>% 
+    inner_join(nrc_joy) %>%
+    count(Season, Episode, sentiment) %>%
+    spread(sentiment, n, fill = 0)
+
+
+The_Office_joy <- inner_join(The_Office_joy, The_Office_N)
+The_Office_joy$joypercent <- The_Office_joy$joy/The_Office_joy$n
+
+ggplot(The_Office_joy, aes(Episode, joypercent, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Season, ncol = 3, scales = "free_x")
+
+```
+Regarding joy, it is interesting how this does not mirror the "bing" sentiment analysis we preformed in our first example. That being said - we see some particularly joyous episodes early in the shows tenure. S1E4, S2E19 and S2E23 (the season finale) skew our results fairly substantially. The peaks in the later seasons are relatively subdued when compared to these episodes. 
+
+
+## Student Analysis AFINN 
+```{r}
+get_sentiments("afinn")
+```
+
+As afinn uses a value system per word, we can take the aggregate sum of these values to determine the shows sentiment equivalent. 
+
+```{r}
+The_Office_afinn <- The_Office %>% 
+    inner_join(get_sentiments("afinn")) %>%
+      group_by(Season, Episode) %>% 
+      summarise(value = sum(value))
+head(The_Office_afinn)
+```
+
+
+```{r}
+ggplot(The_Office_afinn, aes(Episode, value, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Season, ncol = 3, scales = "free_x")
+
+```
+
+As expected, this looks similar but not identical to our "bing" sentiment analysis above. I would imagine this has to do with slight differences in weighting between these two systems.  
+
+## Citation 
+Silge, Julia, and David Robinson. Text mining with R: A tidy approach. " O'Reilly Media, Inc.", 2017.
+
+Saif M. Mohammad and Peter Turney. (2013), ``Crowdsourcing a Word-Emotion Association Lexicon.'' Computational Intelligence, 29(3): 436-465
+
