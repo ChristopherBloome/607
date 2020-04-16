@@ -1,0 +1,61 @@
+---
+title: "LinkedIn Recommender system"
+author: "Christopher Bloome"
+date: "4/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+LinkedIn has several uses. It serves as a social networking site and a job board, with recruiters fitting somewhere in between. The site seems to have several profit centers - it likely generates revenue from advertising, direct sales of an elevated product to job hunters and recruiters, as well as corporate sales to business for their recruiting staff. While they also have additional products like LinkedIn Learning, I will be limiting my analysis to the recommender systems in the core job board functionality. There are 2 sets of situation analysis I will be exploring.  
+
+
+# Situational Analysis 1 
+### Who are the target users? 
+The first set of users are those looking for a new job. They likely already have a LinkedIn account for the social networking features, and LinkedIn is able to leverage this set of users' familiarity with the website to increase their traffic and usage. 
+
+### What are their goals? 
+The user's goals are to find a new job. I would go as far to say that the attraction of LinkedIn (for non recruiters) is the hope of a better employment situation. It is generally less popular for those in sectors where job switching is rare: teachers, union workers et al. 
+
+### How can LinkedIn help accomplish these goals? 
+The best way LinkedIn can help accomplish these goals is to promote, or otherwise make known, jobs that are available for which the user is qualified. 
+
+LinkedIn offers a premium product which offers more insight into the roles which are available. With this product, users can see metrics such as how many users have already applied for a role, and on what date is was initially posted. In this way, users can better vet opportunities and make better use of their time. 
+
+# Situational Analysis 2
+### Who are the target users? 
+Recruiters - those whose occupation is hiring talent for an organization. This could be cases where the recruiter is employed by the firm that is hiring (in house recruiting) or for agency recruiting. 
+
+### What are their goals? 
+This users goal is to find and secure qualified talent for their organization. 
+
+### How can LinkedIn help accomplish these goals? 
+The best way LinkedIn can assist in these goals is by finding qualified talent, with a specific focus on active users (those actually looking or open to a new job, rather than utilizing the social networking features of the site). 
+
+Similar to the premium product for job searchers, LinkedIn offers a number of premium products for recruiters. These allow recruiters to see who is open to new opportunities, who is likely to engage, and who has already been in contact with their organization. 
+
+# Site Analysis (Reverse Engineered)
+
+LinkedIn is a social networking site with a focus on the users professional lives. It is a place where business news is shared, where users can share their skills and projects, and most importantly, where people can find new companies and roles. 
+
+One of the more clever aspects of the site is the blending of the traditional resume with a social media interface. Users can post "skills," which other users can "endorse." Additionally, users can showcase specific projects and other aspects of their work in the same way they can share and promote industry articles and features. 
+
+LinkedIn then leverages these components when a user pivots to job search. The recommender system is in some ways more simple than online retail site - these skills are compared with those listed in the job posting criteria, and in theory roles which the candidate are best suited are suggested. 
+
+At the risk of sounding cynical, if we revise our model, and think of the profit motives of LinkedIn, it is likely that the recommender system most utilized is not recommending the jobs which are the best fit, but ones that keep user engaged, while gently nudging the user to a premium product. The roles which are most promoted are great jobs with great benefits and thousands of applicants. I would not be surprised to learn that a serious job hunter either opts for a premium product or switches to a different platform after a few days. In this way Linkedin can generate revenue from job searchers while verifying that job searchers are actually interested in new roles - a trait that is vital to the other set of users, recruiters. 
+
+# Recommendations 
+
+In my experience, LinkedIn is overly dependent on the paid features. Job searching without the premium feature feels in some ways, unfair. It is clear that nearly every result to a job search is a paid advertisement from the firm that is hiring. Additionally, there are artificial restrictions on things like communication (without a mutual connection, you cannot instigate a conversation) that are lifted with the premium product. 
+
+With the premium product, however, the experience is excellent. Sliders are available related to job posting date, and application activity. With these, and the ability to instigate communication with recruiters, one is better able to find available roles and communicate with decision makers within an organization. In other words, the recommendor systems once freed from the profit motive are great, but need to be freed from said motive to be functional. 
+
+# Sources 
+
+https://engineering.linkedin.com/blog/2019/04/ai-behind-linkedin-recruiter-search-and-recommendation-systems
+https://www.cio.com/article/2877153/why-linkedin-premium-is-worth-the-money.html
+
+
+
